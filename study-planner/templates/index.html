@@ -1,138 +1,280 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Study Planner</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      body {
-        background-color: #f3f4f6;
-      }
-      .chat-container {
-        max-width: 768px;
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-      }
-      .typing-indicator {
-        display: flex;
-        align-items: center;
-        padding: 0.5rem;
-        color: #6b7280;
-      }
-      .typing-dot {
-        width: 8px;
-        height: 8px;
-        margin: 0 2px;
-        background-color: #6b7280;
-        border-radius: 50%;
-        animation: typing 1s infinite ease-in-out;
-      }
-      .message-bubble {
-        padding: 1rem;
-        border-radius: 1.5rem;
-        max-width: 80%;
-        margin-bottom: 1rem;
-      }
-      .user-message {
-        background-color: #3b82f6;
-        color: white;
-        align-self: flex-end;
-      }
-      .agent-message {
-        background-color: #e5e7eb;
-        color: #374151;
-        align-self: flex-start;
-      }
-    </style>
-  </head>
-  <body class="bg-gray-100">
-    <div class="chat-container">
-      <header
-        class="bg-white shadow-sm p-4 text-center font-bold text-xl text-gray-800"
-      >
-        AI Study Planner
-      </header>
 
-      <main id="chat-history" class="flex-1 overflow-y-auto p-4 space-y-4">
-        <div class="message-bubble agent-message">
-          Hello! I'm your AI Study Planner. What topic would you like to study
-          today?
-        </div>
-      </main>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyBuddy – AI Learning OS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
 
-      <footer class="bg-white p-4">
-        <div class="flex items-center">
-          <input
-            type="text"
-            id="user-input"
-            class="flex-1 p-3 border-2 border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
-            placeholder="Type your message..."
-          />
-          <button
-            id="send-btn"
-            class="ml-4 px-6 py-3 bg-blue-500 text-white rounded-full font-semibold hover:bg-blue-600 transition-colors"
-          >
-            Send
-          </button>
-        </div>
-      </footer>
+<body class="bg-gray-100">
+  <div class="max-w-3xl mx-auto flex flex-col h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow p-4 text-center">
+      <h1 class="text-2xl font-bold text-gray-800">📘 StudyBuddy</h1>
+      <p class="text-sm text-gray-500">
+        Multi-Agent AI Study Planner
+      </p>
+    </header>
+
+    <!-- Agent Selector -->
+    <div class="bg-white p-3 border-b flex gap-2">
+      <select id="agent-select" class="border rounded px-3 py-2 text-sm">
+        <option value="default">Default</option>
+        <option value="socratic">Socratic Tutor</option>
+        <option value="explain">Explain with Analogy</option>
+        <option value="exam">Examiner</option>
+        <option value="translate">Translate</option>
+        <option value="audio">Audio Summary</option>
+      </select>
+
+      <input id="agent-extra" type="text" placeholder="Optional context (hobby / difficulty)"
+        class="flex-1 border rounded px-3 py-2 text-sm" />
     </div>
 
-    <script>
-      const chatHistory = document.getElementById("chat-history");
-      const userInput = document.getElementById("user-input");
-      const sendBtn = document.getElementById("send-btn");
+    <!-- Mode Explanation -->
+    <div id="mode-explanation" class="bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded p-3 mx-3 my-2">
+      Select a mode to see how it works.
+    </div>
 
-      function addMessage(sender, text) {
-        const messageElement = document.createElement("div");
-        messageElement.classList.add(
-          "message-bubble",
-          sender === "user" ? "user-message" : "agent-message"
-        );
-        messageElement.textContent = text;
-        chatHistory.appendChild(messageElement);
-        chatHistory.scrollTop = chatHistory.scrollHeight;
+    <!-- Chat -->
+    <main id="chat-history" class="flex-1 overflow-y-auto p-4 space-y-4">
+      <div class="bg-gray-200 p-4 rounded-xl max-w-[80%]">
+        👋 Hi! Choose an agent and ask what you want to study.
+      </div>
+    </main>
+
+    <!-- Input -->
+    <footer class="bg-white p-4 flex gap-3">
+      <input id="user-input"
+        class="flex-1 border rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        placeholder="Type your message..." />
+      <button id="send-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-full font-semibold">
+        Send
+      </button>
+    </footer>
+  </div>
+
+  <script>
+    const chatHistory = document.getElementById("chat-history");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+    const agentSelect = document.getElementById("agent-select");
+    const agentExtra = document.getElementById("agent-extra");
+
+    let conversation = [];
+
+    const modeExplanation = document.getElementById("mode-explanation");
+
+    const MODE_DESCRIPTIONS = {
+      default: `
+<b>Default Mode</b><br/>
+Ask any question and get a clear, direct explanation.<br/>
+Best for quick understanding or revision.
+`,
+
+      socratic: `
+<b>Socratic Tutor Mode</b><br/>
+I won’t give direct answers. Instead, I’ll guide you using questions.<br/>
+This helps build deeper understanding.<br/>
+<i>Tip:</i> Answer honestly — even “I don’t know” helps.
+`,
+
+      explain: `
+<b>Explain with Analogy Mode</b><br/>
+I explain concepts using analogies from daily life or your hobbies.<br/>
+Great for remembering complex ideas.<br/>
+<i>Tip:</i> Use the context box (e.g., cooking, puzzles).
+`,
+
+      exam: `
+<b>Examiner Mode</b><br/>
+I generate mock exam questions and evaluate your understanding.<br/>
+Ideal for interview prep and self-assessment.<br/>
+<i>Tip:</i> Use the context box to set difficulty.
+`,
+
+      translate: `
+<b>Translation Mode</b><br/>
+Translate study material between languages while preserving meaning and structure.<br/>
+Useful for learning from foreign textbooks, articles, or notes.<br/>
+<i>Tip:</i> Use the context box to specify the target language (e.g. "English", "German").
+`,
+
+
+      audio: `
+<b>Audio Summary Mode</b><br/>
+I create a short podcast-style explanation you can listen to.<br/>
+Perfect for revision while commuting.
+`
+    };
+
+    const MODE_PLACEHOLDERS = {
+      default: "Optional context",
+      socratic: "Optional level (beginner / intermediate)",
+      explain: "Analogy context (e.g. cooking, music)",
+      exam: "Difficulty (easy / medium / hard)",
+      translate: "Target language (e.g. English, French)",
+      audio: "Optional style (casual / formal)"
+    };
+
+
+    agentSelect.addEventListener("change", () => {
+      const mode = agentSelect.value;
+      agentExtra.placeholder =
+        MODE_PLACEHOLDERS[mode] || "Optional context";
+    });
+
+
+    agentSelect.addEventListener("change", () => {
+      const selected = agentSelect.value;
+      modeExplanation.innerHTML =
+        MODE_DESCRIPTIONS[selected] ||
+        "Select a mode to see how it works.";
+    });
+
+
+
+    function addMessage(sender, element, agentType = null) {
+      const wrapper = document.createElement("div");
+      wrapper.className = sender === "user" ? "flex justify-end" : "flex justify-start";
+
+      const bubble = document.createElement("div");
+      bubble.className =
+        sender === "user"
+          ? "bg-blue-500 text-white p-4 rounded-xl max-w-[80%]"
+          : "bg-gray-200 text-gray-800 p-4 rounded-xl max-w-[80%]";
+
+      if (agentType) {
+        const badge = document.createElement("div");
+        badge.className = "text-xs font-semibold text-gray-500 mb-1";
+        badge.textContent = `${agentType}`;
+        bubble.appendChild(badge);
       }
 
-      async function sendMessage() {
-        const message = userInput.value.trim();
-        if (message === "") return;
+      bubble.appendChild(element);
+      wrapper.appendChild(bubble);
+      chatHistory.appendChild(wrapper);
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
 
-        addMessage("user", message);
-        userInput.value = "";
+    function buildPayload(intent, message, extra) {
+      switch (intent) {
+        case "socratic":
+          return { topic: message, level: extra || "beginner" };
+        case "explain":
+          return { concept: message, hobby: extra || "daily life" };
+        case "exam":
+          return { material: message, difficulty: extra || "medium" };
+        case "translate":
+          return {
+            text: message,
+            target: extra || "English"
+          };
 
-        try {
-          const response = await fetch("/api/chat", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ message: message }),
+        case "audio":
+          return { text: message };
+        default:
+          return { message };
+      }
+    }
+
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message) return;
+
+      const intent = agentSelect.value;
+      const extra = agentExtra.value.trim();
+
+      addMessage("user", document.createTextNode(message));
+      userInput.value = "";
+
+      sendBtn.disabled = true;
+      sendBtn.textContent = "Thinking...";
+
+      const loading = document.createElement("div");
+      loading.textContent = "⏳ Processing...";
+      addMessage("agent", loading, "System");
+
+      conversation.push({
+        role: "user",
+        content: message
+      });
+
+
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            intent,
+            payload: buildPayload(intent, message, extra),
+            history: conversation
+          }),
+
+        });
+
+        const data = await res.json();
+
+        chatHistory.removeChild(chatHistory.lastChild);
+
+        if (data.type === "audio") {
+          const container = document.createElement("div");
+
+          const audio = document.createElement("audio");
+          audio.controls = true;
+          audio.src = `/${data.file}?t=${Date.now()}`; // cache bust
+
+          container.appendChild(audio);
+
+          if (data.script) {
+            const details = document.createElement("details");
+            details.className = "mt-2 text-sm";
+
+            const summary = document.createElement("summary");
+            summary.textContent = "Show transcript";
+
+            const transcript = document.createElement("div");
+            transcript.className = "mt-2 whitespace-pre-wrap";
+            transcript.textContent = data.script;
+
+            details.appendChild(summary);
+            details.appendChild(transcript);
+            container.appendChild(details);
+          }
+
+          addMessage("agent", container, "Audio Agent");
+        } else {
+          conversation.push({
+            role: "assistant",
+            content: data.content
           });
 
-          const data = await response.json();
-          if (data.response) {
-            addMessage("agent", data.response);
-          } else if (data.error) {
-            addMessage("agent", `Error: ${data.error}`);
-          } else {
-            addMessage("agent", "Unexpected response from server.");
-          }
-        } catch (error) {
-          console.error("Error:", error);
-          addMessage("agent", "Sorry, something went wrong. Please try again.");
-        }
-      }
+          addMessage(
+            "agent",
+            document.createTextNode(data.content || "No response"),
+            intent + " agent"
+          );
 
-      sendBtn.addEventListener("click", sendMessage);
-      userInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") {
-          sendMessage();
         }
-      });
-    </script>
-  </body>
+      } catch (err) {
+        addMessage("agent", document.createTextNode("❌ Error talking to backend"));
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = "Send";
+      }
+    }
+
+    sendBtn.onclick = sendMessage;
+    userInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    modeExplanation.innerHTML = MODE_DESCRIPTIONS[agentSelect.value];
+
+  </script>
+</body>
+
 </html>

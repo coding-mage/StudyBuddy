@@ -1,30 +1,59 @@
-# backend/app.py
+from flask import Flask, request, jsonify, render_template,send_from_directory
+from llm.ollama_runtime import OllamaRuntime
+from orchestrator.learning_orchestrator import LearningOrchestrator
+
+from agents.default import DefaultAgent
+from agents.socratic import SocraticAgent
+from agents.elaborative import ElaborativeAgent
+from agents.examiner import ExaminerAgent
+from agents.translator import TranslationAgent
+from agents.vision_notes import VisionNotesAgent
+from agents.audio_summary import AudioSummaryAgent
+
+
 import os
-from flask import Flask, render_template, request, jsonify
-from gemini_client import GeminiClient
 
-app = Flask(__name__, template_folder='../templates')
-client = GeminiClient()
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-@app.route('/')
+app = Flask(
+    __name__,
+    template_folder=os.path.join(BASE_DIR, "templates")
+)
+
+llm = OllamaRuntime()
+
+orchestrator = LearningOrchestrator({
+    "default": DefaultAgent(llm),
+    "socratic": SocraticAgent(llm),
+    "explain": ElaborativeAgent(llm),
+    "exam": ExaminerAgent(llm),
+    "translate": TranslationAgent(llm),
+    "vision": VisionNotesAgent(),
+    "audio": AudioSummaryAgent(llm)
+})
+
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/api/chat', methods=['POST'])
+@app.route("/summary.wav")
+def serve_audio():
+    return send_from_directory(".", "summary.wav")
+
+@app.route("/api/chat", methods=["POST"])
 def chat():
-    payload = request.get_json(silent=True) or {}
-    user_message = payload.get('message', '').strip()
-    if not user_message:
-        return jsonify({'error': 'No message provided'}), 400
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "Invalid JSON"}), 400
 
-    try:
-        response_text = str(client.generate_response(user_message))
-        print(response_text)
-        # response_text_escaped = response_text.replace("\n", "\\n")
-        return jsonify({'response': response_text})
+    intent = data.get("intent", "default")
+    payload = data.get("payload", {})
+    payload["history"] = data.get("history", [])
 
-    except Exception as e:
-        return jsonify({'error': 'Error generating response'}), 500
+    response = orchestrator.handle(intent, payload)
+    return jsonify(response)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5050)
+
