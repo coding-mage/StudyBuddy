@@ -19,8 +19,6 @@ The project is built with OSS technologies only and runs locally, with no vendor
 
 🔓 Fully open-source stack
 
-🧪 Well-defined test cases
-
 🧠 Learning Modes (Agents)
 
 Each mode is implemented as a separate agent, orchestrated through a central router.
