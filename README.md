@@ -1,120 +1,87 @@
-📘 StudyBuddy – An Open-Source, Multi-Agent AI Learning OS
+# StudyBuddy
 
-StudyBuddy is an open-source, multi-agent AI learning system designed to go beyond a simple chatbot or summarizer.
-It combines pedagogical agents, multi-modal capabilities, and a clean API-first architecture to support deep learning, revision, and exam preparation.
+StudyBuddy is a multi-agent AI learning system designed to support guided learning, revision, translation, and exam preparation. It features pedagogical agents, multi-modal capabilities, and an API-first architecture, powered by local open-source models with no vendor lock-in.
 
-The project is built with OSS technologies only and runs locally, with no vendor lock-in.
+## Features & Learning Modes
 
-✨ Key Highlights
+Each learning mode is managed by a dedicated agent orchestrated through a central router:
 
-🤖 Multi-Agent Architecture (not a single chatbot)
+1. **Default Mode**: General explanation engine providing direct, clear answers to questions.
+2. **Socratic Tutor Mode**: Guided reasoning that asks leading questions to prompt the learner to arrive at the answer independently.
+3. **Analogy Mode**: Metaphorical explanations matching complex concepts to everyday analogies.
+4. **Examiner Mode**: Generates mock exam questions, model answers, and constructive feedback for exam and interview preparation.
+5. **General Translation Mode**: Meaning-preserving translation of academic texts across multiple languages.
+6. **Audio Summary Mode**: Generates a podcast-style summary and converts it to audio via text-to-speech.
 
-🧠 Pedagogy-driven learning modes
+## Context Preservation
 
-🎧 Audio (podcast-style) explanations
+The frontend stores conversation history and transmits it with each request. The central orchestrator provides context to the downstream agents to enable coherent, multi-turn follow-ups, which is essential for guided Socratic tutor dialogues.
 
-🌍 General-purpose translation
+## Architecture
 
-🧩 Context-aware conversations
+```
+            +---------------------------+
+            |      UI (HTML + CSS)      |
+            +-------------+-------------+
+                          | HTTP
+                          v
+            +---------------------------+
+            |     Flask API Router      |
+            +-------------+-------------+
+                          |
+                          v
+            +---------------------------+
+            |   Learning Orchestrator   |
+            +-------------+-------------+
+                          |
+             +------------+------------+
+             |                         |
+             v                         v
+     +-------+--------+        +-------+--------+
+     | Default Agent  |        | Socratic Agent | ...
+     +-------+--------+        +-------+--------+
+             |                         |
+             +------------+------------+
+                          |
+                          v
+            +---------------------------+
+            |    Local LLM (Ollama)     |
+            +---------------------------+
+```
 
-🔓 Fully open-source stack
+## Technical Stack
 
-🧠 Learning Modes (Agents)
+- **Backend**: Python, Flask
+- **LLM Runtime**: Ollama (configured for Llama 3)
+- **Frontend**: HTML, TailwindCSS, Vanilla JavaScript
+- **Audio Synthesis**: Coqui TTS
+- **OCR (Optional)**: Tesseract
+- **Vector Search (Optional)**: FAISS
 
-Each mode is implemented as a separate agent, orchestrated through a central router.
+## Getting Started
 
-1. Default Mode
+### 1. Configure local LLM runtime (Ollama)
+Install and run Ollama with Llama 3:
+```bash
+brew install ollama
+ollama serve
+ollama run llama3
+```
 
-Purpose: Direct explanations
-Ask any question and receive a clear, concise answer.
+### 2. Configure Backend
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Install Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Run the Flask application:
+   ```bash
+   python app.py
+   ```
+   The API will bind to `http://127.0.0.1:5050` by default.
 
-Best for:
-Quick understanding
-Revision
-Fact checking
-
-2. Socratic Tutor Mode
-
-Purpose: Guided thinking instead of direct answers
-The agent responds with carefully chosen questions that help the learner arrive at the answer step by step.
-
-Why it matters:
-This mode is based on Socratic pedagogy, encouraging deeper understanding rather than memorization.
-
-3. Explain with Analogy Mode
-
-Purpose: Improve retention using analogies
-Complex concepts are explained using everyday metaphors or user-provided contexts (e.g. cooking, music, puzzles).
-
-
-4. Examiner Mode
-
-Purpose: Self-assessment and interview preparation
-Generates mock exam questions, model answers, and feedback.
-
-Best for:
-Interview prep
-Concept validation
-Exam revision
-
-5. Translation Mode (General-Purpose)
-
-Purpose: Translate learning material between languages
-Supports any source → any target language, preserving meaning and structure.
-
-Use cases:
-
-Studying from foreign textbooks
-Understanding technical material in another language
-Language-assisted learning
-
-6. Audio Summary Mode
-
-Purpose: Learn by listening
-Generates a podcast-style spoken explanation, then converts it to audio using TTS.
-
-Best for:
-Revision while commuting
-Passive learning
-Accessibility
-
-🧩 Context Preservation
-
-StudyBuddy supports context-aware conversations.
-Conversation history is preserved on the frontend
-History is sent with each request
-Agents use recent turns to generate coherent follow-ups
-
-This ensures:
-Socratic conversations don’t derail
-Follow-up answers remain relevant
-Learning feels continuous
-
-🏗️ Architecture Overview
-
-UI (HTML + Tailwind)
-   ↓
-Flask API (/api/chat)
-   ↓
-Learning Orchestrator
-   ↓
-Specialized Agents
-   ├── Default Agent
-   ├── Socratic Agent
-   ├── Elaborative Agent
-   ├── Examiner Agent
-   ├── Translation Agent
-   └── Audio Summary Agent
-   ↓
-LLM Runtime (Ollama)
-
-
-🧰 Technology Stack
-
-Backend: Python, Flask
-LLM Runtime: Ollama (local models like LLaMA 3)
-Frontend: HTML, TailwindCSS, Vanilla JavaScript
-Audio: Coqui TTS
-Translation: LLM-based (generalized)
-OCR (optional): Tesseract
-Vector Search (future): FAISS
+### 3. Open UI
+Access the application by navigating to `http://127.0.0.1:5050` in a web browser.
