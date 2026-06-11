@@ -1,10 +1,3 @@
 flask
 ollama
-transformers
-sentence-transformers
-faiss-cpu
-pytesseract
-pillow
-TTS
-pydub
-duckduckgo-search
+gunicorn

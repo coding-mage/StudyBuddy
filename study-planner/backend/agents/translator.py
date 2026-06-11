@@ -1,6 +1,3 @@
-# backend/agents/translator.py
-from transformers import pipeline
-
 class TranslationAgent:
     def __init__(self, llm):
         self.llm = llm
@@ -8,10 +5,15 @@ class TranslationAgent:
 
     def _load_model(self):
         if self.translator is None:
-            self.translator = pipeline(
-                "translation",
-                model="facebook/nllb-200-distilled-600M"
-            )
+            try:
+                from transformers import pipeline
+                self.translator = pipeline(
+                    "translation",
+                    model="facebook/nllb-200-distilled-600M"
+                )
+            except Exception as e:
+                print(f"Transformers load failed: {e}. Falling back to LLM translation.")
+                self.translator = "MOCK"
 
     def run(self, payload):
         text = payload["text"]
